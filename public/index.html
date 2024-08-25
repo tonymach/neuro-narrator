@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuroscience-based Narrative AI Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        #game-log { border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; height: 300px; overflow-y: auto; }
+        #world-state, #ai-state { border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; }
+        .dm-narration { color: #004d00; font-style: italic; }
+        .ai-thoughts { color: #000080; }
+        .ai-action { color: #800000; font-weight: bold; }
+        input[type="text"] { width: 70%; padding: 5px; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h1>Neuroscience-based Narrative AI Game</h1>
+    <div id="game-log"></div>
+    <div id="world-state"></div>
+    <div id="ai-state"></div>
+    <input type="text" id="action-input" placeholder="Enter your action">
+    <button onclick="submitAction()">Submit</button>
+
+    <script>
+        async function submitAction() {
+            const action = document.getElementById('action-input').value;
+            if (!action) return;
+
+            try {
+                const response = await fetch('/game-action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                });
+                const data = await response.json();
+                updateGameLog(data.responses);
+                updateWorldState(data.worldState);
+                updateAIState(data.aiState);
+                document.getElementById('action-input').value = '';
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function updateGameLog(responses) {
+            const gameLog = document.getElementById('game-log');
+            responses.forEach(response => {
+                const div = document.createElement('div');
+                if (response.speaker === "Dungeon Master") {
+                    div.innerHTML = `<p class="dm-narration">${response.text}</p>`;
+                } else {
+                    const [thoughts, action] = response.text.split('Action:');
+                    div.innerHTML = `
+                        <p class="ai-thoughts">${thoughts.trim()}</p>
+                        <p class="ai-action">Action: ${action.trim()}</p>
+                    `;
+                }
+                gameLog.appendChild(div);
+            });
+            gameLog.scrollTop = gameLog.scrollHeight;
+        }
+
+        function updateWorldState(state) {
+            document.getElementById('world-state').innerHTML = `
+                <h3>World State</h3>
+                <p><strong>Location:</strong> ${state.location}</p>
+                <p><strong>Time:</strong> ${state.time}</p>
+                <p><strong>Weather:</strong> ${state.weather}</p>
+                <p><strong>Characters:</strong> ${state.characters.join(', ')}</p>
+                <p><strong>Items:</strong> ${state.items.join(', ')}</p>
+                <p><strong>Neural Activity:</strong> ${state.neuralActivity.toFixed(2)}</p>
+                <p><strong>Recent Events:</strong> ${state.events.join('. ')}</p>
+            `;
+        }
+
+        function updateAIState(state) {
+            const aiStateDiv = document.getElementById('ai-state');
+            aiStateDiv.innerHTML = `
+                <h3>AI State</h3>
+                <p><strong>Emotion:</strong> ${state.emotion}</p>
+                <p><strong>Sleep State:</strong> ${state.sleepState}</p>
+                <h4>Brain Waves:</h4>
+                <div id="brain-waves-visual"></div>
+                <p><strong>Alpha:</strong> ${state.brainWaves.alpha.toFixed(2)}</p>
+                <p><strong>Beta:</strong> ${state.brainWaves.beta.toFixed(2)}</p>
+                <p><strong>Theta:</strong> ${state.brainWaves.theta.toFixed(2)}</p>
+                <p><strong>Delta:</strong> ${state.brainWaves.delta.toFixed(2)}</p>
+                <h4>Goals:</h4>
+                <ul>
+                    ${state.goals.map(goal => `<li>${goal.description} (Progress: ${goal.progress}%)</li>`).join('')}
+                </ul>
+                <h4>Recent Memories:</h4>
+                <ul>
+                    ${state.memories.map(memory => `<li>${memory.info} (Importance: ${memory.importance.toFixed(2)})</li>`).join('')}
+                </ul>
+            `;
+
+            // Create a visual representation of brain waves
+            const brainWavesVisual = document.getElementById('brain-waves-visual');
+            brainWavesVisual.style.height = '50px';
+            brainWavesVisual.style.display = 'flex';
+            brainWavesVisual.style.alignItems = 'flex-end';
+            brainWavesVisual.style.marginBottom = '10px';
+
+            const waveTypes = ['alpha', 'beta', 'theta', 'delta'];
+            waveTypes.forEach(type => {
+                const waveBar = document.createElement('div');
+                waveBar.style.width = '25%';
+                waveBar.style.height = `${state.brainWaves[type] * 50}px`;
+                waveBar.style.backgroundColor = getWaveColor(type);
+                waveBar.style.marginRight = '2px';
+                waveBar.title = `${type}: ${state.brainWaves[type].toFixed(2)}`;
+                brainWavesVisual.appendChild(waveBar);
+            });
+        }
+
+        function getWaveColor(waveType) {
+            switch(waveType) {
+                case 'alpha': return '#FFA500'; // Orange
+                case 'beta': return '#4CAF50';  // Green
+                case 'theta': return '#2196F3'; // Blue
+                case 'delta': return '#9C27B0'; // Purple
+                default: return '#000000';      // Black
+            }
+        }
+
+        // Function to periodically update the game state
+        async function updateGameState() {
+            try {
+                const response = await fetch('/game-state');
+                const data = await response.json();
+                updateWorldState(data.worldState);
+                updateAIState(data.aiState);
+            } catch (error) {
+                console.error('Error updating game state:', error);
+            }
+        }
+
+        // Update game state every 10 seconds
+        setInterval(updateGameState, 10000);
+
+        // Initial game state update
+        updateGameState();
+    </script>
+</body>
+</html>
